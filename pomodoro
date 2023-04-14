@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# TODO: custom timewarrior summary to show pomodoros with annotations
+# TODO: instead of accepting an arbitrary name on the command line, accept a taskwarrior id and derive the annotation automatically
+
+# It's just `pomodoro "task name"`
+
+taskName="${1}"
+if [[ -z $taskName ]]; then
+  printf "Expected task name parameter\n"
+  exit 1
+fi
+
+trap stopTimer INT TERM
+
+function stopTimer() {
+  timew stop 2>/dev/null 1>/dev/null
+  timew summary :annotation
+  exit
+}
+
+# Terminate the active task if there is one
+timew stop 1>/dev/null 2>&1
+
+# start timewarrior
+timew start pomodoro || exit 1
+timew annotate "${taskName}"
+
+# Time the working portion
+frankmer 25m
+
+# instead of icon stop, we could also use "caution" and "note"
+#osascript -e 'tell app "System Events" to display dialog "Pomodoro finished" with title "Pomodoro finished" buttons {"OK"} with icon stop'
+osascript -e 'tell app "System Events" to display dialog "Pomodoro finished" with title "Pomodoro finished" buttons {"OK"} with icon POSIX file "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Clock.icns"' &>/dev/null &
+afplay /System/Library/Sounds/Hero.aiff &
+sleep 0.2
+afplay /System/Library/Sounds/Hero.aiff &
+sleep 0.2
+afplay /System/Library/Sounds/Hero.aiff &
+
+timew start break || exit 1
+timew annotate "break"
+
+# Time the break portion
+frankmer 5m
+
+osascript -e 'tell app "System Events" to display dialog "Break time finished" with title "Break time finished" buttons {"OK"} with icon POSIX file "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Clock.icns"' &>/dev/null &
+afplay /System/Library/Sounds/Hero.aiff &
+sleep 0.2
+afplay /System/Library/Sounds/Hero.aiff &
+sleep 0.2
+afplay /System/Library/Sounds/Hero.aiff &
+
+timew stop
+timew summary :annotation
+
+
