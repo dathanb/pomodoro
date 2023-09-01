@@ -5,10 +5,16 @@
 
 # It's just `pomodoro "task name"`
 
+action="${1}"
+if [[ -z $action ]]; then
+    action="work"
+fi
+
+shift
+
 taskName="${1}"
 if [[ -z $taskName ]]; then
-  printf "Expected task name parameter\n"
-  exit 1
+  taskName="work"
 fi
 
 trap stopTimer INT TERM
@@ -19,6 +25,41 @@ function stopTimer() {
   exit
 }
 
+function ringDingDing() {
+    message="${1}"
+    # instead of icon stop, we could also use "caution" and "note"
+    #osascript -e 'tell app "System Events" to display dialog "Pomodoro finished" with title "Pomodoro finished" buttons {"OK"} with icon stop'
+    osascript -e 'tell app "System Events" to display dialog "'"${message}"'" with title "'"${message}"'" buttons {"OK"} with icon POSIX file "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Clock.icns"' &>/dev/null &
+    afplay /System/Library/Sounds/Hero.aiff &
+    sleep 0.2
+    afplay /System/Library/Sounds/Hero.aiff &
+    sleep 0.2
+    afplay /System/Library/Sounds/Hero.aiff &
+}
+
+function pomodoroSession() {
+
+    # Time the working portion
+    frankmer 25m
+
+    ringDingDing "Pomodoro finished"
+
+    pomodoroBreak
+
+}
+
+function pomodoroBreak() {
+    timew start break || exit 1
+    timew annotate "break"
+
+    # Time the break portion
+    frankmer 5m
+
+    ringDingDing "Break finished"
+
+    timew stop
+}
+
 # Terminate the active task if there is one
 timew stop 1>/dev/null 2>&1
 
@@ -26,32 +67,13 @@ timew stop 1>/dev/null 2>&1
 timew start pomodoro || exit 1
 timew annotate "${taskName}"
 
-# Time the working portion
-frankmer 25m
+case $action in
+    break)
+        pomodoroBreak
+        ;;
+    *)
+        pomodoroSession
+        ;;
+esac
 
-# instead of icon stop, we could also use "caution" and "note"
-#osascript -e 'tell app "System Events" to display dialog "Pomodoro finished" with title "Pomodoro finished" buttons {"OK"} with icon stop'
-osascript -e 'tell app "System Events" to display dialog "Pomodoro finished" with title "Pomodoro finished" buttons {"OK"} with icon POSIX file "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Clock.icns"' &>/dev/null &
-afplay /System/Library/Sounds/Hero.aiff &
-sleep 0.2
-afplay /System/Library/Sounds/Hero.aiff &
-sleep 0.2
-afplay /System/Library/Sounds/Hero.aiff &
-
-timew start break || exit 1
-timew annotate "break"
-
-# Time the break portion
-frankmer 5m
-
-osascript -e 'tell app "System Events" to display dialog "Break time finished" with title "Break time finished" buttons {"OK"} with icon POSIX file "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Clock.icns"' &>/dev/null &
-afplay /System/Library/Sounds/Hero.aiff &
-sleep 0.2
-afplay /System/Library/Sounds/Hero.aiff &
-sleep 0.2
-afplay /System/Library/Sounds/Hero.aiff &
-
-timew stop
 timew summary :annotation
-
-
