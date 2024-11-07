@@ -38,9 +38,19 @@ function ringDingDing() {
 }
 
 function pomodoroSession() {
+    # No matter when we start the pomodoro session, we're going to run it until 5m before the next half-hour boundary
+    # That way we don't have to manually coordinate pomodoros and meetings
+    currentMinute=$(date +%M)
+    currentSeconds=$(date +%S)
+    pomodoroSeconds=$((60-$currentSeconds))
+    if [[ $currentMinute -gt 30 ]]; then
+        pomodoroMinutes=$((59-$currentMinute-5))
+    else
+        pomodoroMinutes=$((29-$currentMinute-5))
+    fi
 
     # Time the working portion
-    frankmer 25m
+    frankmer ${pomodoroMinutes}m ${pomodoroSeconds}s
 
     ringDingDing "Pomodoro finished"
 
