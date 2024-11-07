@@ -41,14 +41,16 @@ function pomodoroSession() {
     # No matter when we start the pomodoro session, we're going to run it until 5m before the next half-hour boundary
     # That way we don't have to manually coordinate pomodoros and meetings
     currentMinute=$(date +%M)
-    if [[ $currentMinute -ge 30 ]]; then
-      pomodoroLength=$((60-$currentMinute-5))
+    currentSeconds=$(date +%S)
+    pomodoroSeconds=$((60-$currentSeconds))
+    if [[ $currentMinute -gt 30 ]]; then
+        pomodoroMinutes=$((59-$currentMinute-5))
     else
-      pomodoroLength=$((30-$currentMinute-5))
+        pomodoroMinutes=$((29-$currentMinute-5))
     fi
 
     # Time the working portion
-    frankmer "${pomodoroLength}m"
+    frankmer ${pomodoroMinutes}m ${pomodoroSeconds}s
 
     ringDingDing "Pomodoro finished"
 
