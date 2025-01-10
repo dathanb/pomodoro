@@ -43,7 +43,7 @@ function pomodoroSession() {
     currentMinute=$(date +%-M)
     currentSeconds=$(date +%-S)
     pomodoroSeconds=$((60-$currentSeconds))
-    if [[ $currentMinute -gt 30 ]]; then
+    if [[ $currentMinute -ge 30 ]]; then
         pomodoroMinutes=$((59-$currentMinute-5))
     else
         pomodoroMinutes=$((29-$currentMinute-5))
