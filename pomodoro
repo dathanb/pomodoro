@@ -1,18 +1,48 @@
 #!/usr/bin/env bash
 
-# TODO: custom timewarrior summary to show pomodoros with annotations
-# TODO: instead of accepting an arbitrary name on the command line, accept a taskwarrior id and derive the annotation automatically
+# Pomodoro timer
+# There are a few options:
+# `pomodoro` by itself will start a timer that will end 5 minutes before the next even multiple of 30 minutes, and then
+# start a 5 minute timer. This is also an alias for `pomodoro short`
+# `pomodoro break` will start a break timer -- i.e., a 5 minute timer.
+# `pomodoro long` will start a long pomodoro timer -- i.e., one that will end at the next multiple of a half hour
+# that's at least 30 minutes away from the current time. So if you do `pomodoro long` at 12:15, the pomodoro timer will
+# end at 12:50 and then you'll get a 10 minute break timer. If you do `pomodoro long` at 12:31, the timer will end at
+# 1:20 and you'll get a 10 minute timer.
+# And if you specify the length, you can 
 
-# It's just `pomodoro "task name"`
+function printUsage() {
+    printf "Usage: pomodoro [short|long] [task description]\n"
+    printf "If the first positional argument is omitted, it's assumed to be 'short'.\n"
+    printf "For the sake of unambiguous parsing and unsurprising behavior, if the length is omitted no task description is allowed.\n"
+}
 
-action="${1}"
-if [[ -z $action ]]; then
-    action="work"
-fi
+case "${1}" in
+    short)
+        action="${1}"
+        breakTime=5
+        shift
+        ;;
+    long)
+        action="${1}"
+        breakTime=10
+        shift
+        ;;
+    break)
+        pomodoroBreak
+        ;;
+    *)
+        if [[ ${#@} -eq 0 ]]; then
+            action=short
+            breakTime=5
+        else
+            printUsage
+            exit 1
+        fi
+        ;;
+esac
 
-shift
-
-taskName="${1}"
+taskName="${@}"
 if [[ -z $taskName ]]; then
   taskName="work"
 fi
@@ -39,43 +69,49 @@ function ringDingDing() {
 
 function pomodoroSession() {
     # No matter when we start the pomodoro session, we're going to run it until 5m before the next half-hour boundary
+    # for short sessions, or 10m before the next-next half-hour boundary for long sessions.
     # That way we don't have to manually coordinate pomodoros and meetings
     currentMinute=$(date +%-M)
+    currentMinute="$(($currentMinute % 30))"
     currentSeconds=$(date +%-S)
     pomodoroSeconds=$((60-$currentSeconds))
-    if [[ $currentMinute -ge 30 ]]; then
-        pomodoroMinutes=$((59-$currentMinute-5))
-    else
+    if [[ $action == "short" ]]; then
         pomodoroMinutes=$((29-$currentMinute-5))
+    else 
+        pomodoroMinutes=$((89-$currentMinute-10))
     fi
+
+    # Terminate the active task if there is one
+    timew stop 1>/dev/null 2>&1
+
+    # start timewarrior
+    timew start pomodoro || exit 1
+    timew annotate "${taskName}"
 
     # Time the working portion
     frankmer ${pomodoroMinutes}m ${pomodoroSeconds}s
 
     ringDingDing "Pomodoro finished"
 
-    pomodoroBreak
+    pomodoroBreak $breakTime
 
 }
 
 function pomodoroBreak() {
+    breakTime="${1}"
+    if [[ -z $breakTime ]]; then
+        breakTime=5
+    fi
     timew start break || exit 1
     timew annotate "break"
 
     # Time the break portion
-    frankmer 5m
+    frankmer "${breakTime}m"
 
     ringDingDing "Break finished"
 
     timew stop
 }
-
-# Terminate the active task if there is one
-timew stop 1>/dev/null 2>&1
-
-# start timewarrior
-timew start pomodoro || exit 1
-timew annotate "${taskName}"
 
 case $action in
     break)
