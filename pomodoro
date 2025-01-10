@@ -78,7 +78,7 @@ function pomodoroSession() {
     if [[ $action == "short" ]]; then
         pomodoroMinutes=$((29-$currentMinute-5))
     else 
-        pomodoroMinutes=$((89-$currentMinute-10))
+        pomodoroMinutes=$((59-$currentMinute-10))
     fi
 
     # Terminate the active task if there is one
