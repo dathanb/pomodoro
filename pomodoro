@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 
-# TODO: custom timewarrior summary to show pomodoros with annotations
-# TODO: instead of accepting an arbitrary name on the command line, accept a taskwarrior id and derive the annotation automatically
-
-# It's just `pomodoro "task name"`
+# Pomodoro timer
+# There are a few options:
+# `pomodoro` by itself will start a timer that will end 5 minutes before the next even multiple of 30 minutes, and then
+# start a 5 minute timer. This is also an alias for `pomodoro short`
+# `pomodoro break` will start a break timer -- i.e., a 5 minute timer.
+# `pomodoro long` will start a long pomodoro timer -- i.e., one that will end at the next multiple of a half hour
+# that's at least 30 minutes away from the current time. So if you do `pomodoro long` at 12:15, the pomodoro timer will
+# end at 12:50 and then you'll get a 10 minute break timer. If you do `pomodoro long` at 12:31, the timer will end at
+# 1:20 and you'll get a 10 minute timer.
+# And in either case you can add a 
 
 action="${1}"
 if [[ -z $action ]]; then
-    action="work"
+    action="short"
 fi
 
 shift
 
-taskName="${1}"
+taskName="${@}"
 if [[ -z $taskName ]]; then
   taskName="work"
 fi
